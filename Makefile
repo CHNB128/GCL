@@ -1,9 +1,10 @@
-build=./build
-source=./src
-exe_name=glc
+build = ./build
+sources = ./src/Repl.cs ./src/Engine/*.cs
+exe_name = glc
+libs = ./libs/NDesk/*.cs
 
 all:
-	mcs -out:${build}/${exe_name} ${source}/Main.cs ${source}/Engine/*
+	mcs -out:${build}/${exe_name} ./src/Main.cs ${libs} ${sources}
 
 clean:
 	rm -Rf ${build}/*
