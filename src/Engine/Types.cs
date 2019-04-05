@@ -3,73 +3,73 @@ using System.Collections.Generic;
 using Mal;
 
 namespace Mal {
-    public class types {
+    public class Types {
         //
         // Exceptions/Errors
         //
-        public class MalThrowable : Exception {
-            public MalThrowable () : base () { }
-            public MalThrowable (string message) : base (message) { }
+        public class eThrowable : Exception {
+            public eThrowable () : base () { }
+            public eThrowable (string message) : base (message) { }
         }
 
-        public class MalError : MalThrowable {
-            public MalError (string message) : base (message) { }
+        public class eError : eThrowable {
+            public eError (string message) : base (message) { }
         }
 
-        public class MalContinue : MalThrowable { }
+        public class eContinue : eThrowable { }
 
         // Thrown by throw function
-        public class MalException : MalThrowable {
-            MalVal value;
+        public class eException : eThrowable {
+            eValue value;
 
-            public MalException (MalVal value) {
+            public eException (eValue value) {
                 this.value = value;
             }
 
-            public MalException (string value) : base (value) {
-                this.value = new MalString (value);
+            public eException (string value) : base (value) {
+                this.value = new eString (value);
             }
 
-            public MalVal getValue () { return value; }
+            public eValue getValue () { return value; }
         }
 
         //
         // General functions
         //
-        public static bool _equal_Q (MalVal a, MalVal b) {
+        public static bool _equal_Q (eValue a, eValue b) {
             Type ota = a.GetType (), otb = b.GetType ();
             if (!((ota == otb) ||
-                    (a is MalList && b is MalList))) {
+                    (a is eList && b is eList))) {
                 return false;
             } else {
-                if (a is MalInt) {
-                    return ((MalInt) a).getValue () ==
-                        ((MalInt) b).getValue ();
-                } else if (a is MalSymbol) {
-                    return ((MalSymbol) a).getName () ==
-                        ((MalSymbol) b).getName ();
-                } else if (a is MalString) {
-                    return ((MalString) a).getValue () ==
-                        ((MalString) b).getValue ();
-                } else if (a is MalList) {
-                    if (((MalList) a).size () != ((MalList) b).size ()) {
+                if (a is eInt) {
+                    return ((eInt) a).getValue () ==
+                        ((eInt) b).getValue ();
+                } else if (a is eSymbol) {
+                    return ((eSymbol) a).getName () ==
+                        ((eSymbol) b).getName ();
+                } else if (a is eString) {
+                    return ((eString) a).getValue () ==
+                        ((eString) b).getValue ();
+                } else if (a is eList) {
+                    if (((eList) a).size () != ((eList) b).size ()) {
                         return false;
                     }
-                    for (int i = 0; i < ((MalList) a).size (); i++) {
-                        if (!_equal_Q (((MalList) a) [i], ((MalList) b) [i])) {
+                    for (int i = 0; i < ((eList) a).size (); i++) {
+                        if (!_equal_Q (((eList) a) [i], ((eList) b) [i])) {
                             return false;
                         }
                     }
                     return true;
-                } else if (a is MalHashMap) {
-                    var akeys = ((MalHashMap) a).getValue ().Keys;
-                    var bkeys = ((MalHashMap) b).getValue ().Keys;
+                } else if (a is eHashMap) {
+                    var akeys = ((eHashMap) a).getValue ().Keys;
+                    var bkeys = ((eHashMap) b).getValue ().Keys;
                     if (akeys.Count != bkeys.Count) {
                         return false;
                     }
                     foreach (var k in akeys) {
-                        if (!_equal_Q (((MalHashMap) a).getValue () [k],
-                                ((MalHashMap) b).getValue () [k])) {
+                        if (!_equal_Q (((eHashMap) a).getValue () [k],
+                                ((eHashMap) b).getValue () [k])) {
                             return false;
                         }
                     }
@@ -80,22 +80,22 @@ namespace Mal {
             }
         }
 
-        public abstract class MalVal {
-            MalVal meta = Nil;
-            public virtual MalVal copy () {
-                return (MalVal) this.MemberwiseClone ();
+        public abstract class eValue {
+            eValue meta = Nil;
+            public virtual eValue copy () {
+                return (eValue) this.MemberwiseClone ();
             }
 
             // Default is just to call regular toString()
             public virtual string ToString (bool print_readably) {
                 return this.ToString ();
             }
-            public MalVal getMeta () { return meta; }
-            public MalVal setMeta (MalVal m) { meta = m; return this; }
+            public eValue getMeta () { return meta; }
+            public eValue setMeta (eValue m) { meta = m; return this; }
             public virtual bool list_Q () { return false; }
         }
 
-        public class MalConstant : MalVal {
+        public class MalConstant : eValue {
             string value;
             public MalConstant (string name) { value = name; }
             public new MalConstant copy () { return this; }
@@ -112,10 +112,10 @@ namespace Mal {
         static public MalConstant True = new MalConstant ("true");
         static public MalConstant False = new MalConstant ("false");
 
-        public class MalInt : MalVal {
+        public class eInt : eValue {
             Int64 value;
-            public MalInt (Int64 v) { value = v; }
-            public new MalInt copy () { return this; }
+            public eInt (Int64 v) { value = v; }
+            public new eInt copy () { return this; }
 
             public Int64 getValue () { return value; }
             public override string ToString () {
@@ -124,37 +124,37 @@ namespace Mal {
             public override string ToString (bool print_readably) {
                 return value.ToString ();
             }
-            public static MalConstant operator < (MalInt a, MalInt b) {
+            public static MalConstant operator < (eInt a, eInt b) {
                 return a.getValue () < b.getValue () ? True : False;
             }
-            public static MalConstant operator <= (MalInt a, MalInt b) {
+            public static MalConstant operator <= (eInt a, eInt b) {
                 return a.getValue () <= b.getValue () ? True : False;
             }
-            public static MalConstant operator > (MalInt a, MalInt b) {
+            public static MalConstant operator > (eInt a, eInt b) {
                 return a.getValue () > b.getValue () ? True : False;
             }
-            public static MalConstant operator >= (MalInt a, MalInt b) {
+            public static MalConstant operator >= (eInt a, eInt b) {
                 return a.getValue () >= b.getValue () ? True : False;
             }
-            public static MalInt operator + (MalInt a, MalInt b) {
-                return new MalInt (a.getValue () + b.getValue ());
+            public static eInt operator + (eInt a, eInt b) {
+                return new eInt (a.getValue () + b.getValue ());
             }
-            public static MalInt operator - (MalInt a, MalInt b) {
-                return new MalInt (a.getValue () - b.getValue ());
+            public static eInt operator - (eInt a, eInt b) {
+                return new eInt (a.getValue () - b.getValue ());
             }
-            public static MalInt operator * (MalInt a, MalInt b) {
-                return new MalInt (a.getValue () * b.getValue ());
+            public static eInt operator * (eInt a, eInt b) {
+                return new eInt (a.getValue () * b.getValue ());
             }
-            public static MalInt operator / (MalInt a, MalInt b) {
-                return new MalInt (a.getValue () / b.getValue ());
+            public static eInt operator / (eInt a, eInt b) {
+                return new eInt (a.getValue () / b.getValue ());
             }
         }
 
-        public class MalSymbol : MalVal {
+        public class eSymbol : eValue {
             string value;
-            public MalSymbol (string v) { value = v; }
-            public MalSymbol (MalString v) { value = v.getValue (); }
-            public new MalSymbol copy () { return this; }
+            public eSymbol (string v) { value = v; }
+            public eSymbol (eString v) { value = v.getValue (); }
+            public new eSymbol copy () { return this; }
 
             public string getName () { return value; }
             public override string ToString () {
@@ -165,10 +165,10 @@ namespace Mal {
             }
         }
 
-        public class MalString : MalVal {
+        public class eString : eValue {
             string value;
-            public MalString (string v) { value = v; }
-            public new MalString copy () { return this; }
+            public eString (string v) { value = v; }
+            public new eString copy () { return this; }
 
             public string getValue () { return value; }
             public override string ToString () {
@@ -187,24 +187,24 @@ namespace Mal {
             }
         }
 
-        public class MalList : MalVal {
+        public class eList : eValue {
             public string start = "(", end = ")";
-            List<MalVal> value;
+            List<eValue> value;
 
-            public MalList () {
-                value = new List<MalVal> ();
+            public eList () {
+                value = new List<eValue> ();
             }
 
-            public MalList (List<MalVal> val) {
+            public eList (List<eValue> val) {
                 value = val;
             }
 
-            public MalList (params MalVal[] mvs) {
-                value = new List<MalVal> ();
+            public eList (params eValue[] mvs) {
+                value = new List<eValue> ();
                 conj_BANG (mvs);
             }
 
-            public List<MalVal> getValue () { return value; }
+            public List<eValue> getValue () { return value; }
 
             public override bool list_Q () { return true; }
 
@@ -216,7 +216,7 @@ namespace Mal {
                 return start + printer.join (value, " ", print_readably) + end;
             }
 
-            public MalList conj_BANG (params MalVal[] mvs) {
+            public eList conj_BANG (params eValue[] mvs) {
                 for (int i = 0; i < mvs.Length; i++) {
                     value.Add (mvs[i]);
                 }
@@ -225,68 +225,68 @@ namespace Mal {
 
             public int size () { return value.Count; }
 
-            public MalVal nth (int idx) {
+            public eValue nth (int idx) {
                 return value.Count > idx ? value[idx] : Nil;
             }
 
-            public MalVal this [int idx] {
+            public eValue this [int idx] {
                 get { return value.Count > idx ? value[idx] : Nil; }
             }
 
-            public MalList rest () {
+            public eList rest () {
                 if (size () > 0) {
-                    return new MalList (value.GetRange (1, value.Count - 1));
+                    return new eList (value.GetRange (1, value.Count - 1));
                 } else {
-                    return new MalList ();
+                    return new eList ();
                 }
             }
 
-            public virtual MalList slice (int start) {
-                return new MalList (value.GetRange (start, value.Count - start));
+            public virtual eList slice (int start) {
+                return new eList (value.GetRange (start, value.Count - start));
             }
 
-            public virtual MalList slice (int start, int end) {
-                return new MalList (value.GetRange (start, end - start));
+            public virtual eList slice (int start, int end) {
+                return new eList (value.GetRange (start, end - start));
             }
 
         }
 
-        public class MalVector : MalList {
+        public class eVector : eList {
             // Same implementation except for instantiation methods
-            public MalVector () : base () {
+            public eVector () : base () {
                 start = "[";
                 end = "]";
             }
 
-            public MalVector (List<MalVal> val) : base (val) {
+            public eVector (List<eValue> val) : base (val) {
                 start = "[";
                 end = "]";
             }
 
             public override bool list_Q () { return false; }
 
-            public override MalList slice (int start, int end) {
+            public override eList slice (int start, int end) {
                 var val = this.getValue ();
-                return new MalVector (val.GetRange (start, val.Count - start));
+                return new eVector (val.GetRange (start, val.Count - start));
             }
         }
 
-        public class MalHashMap : MalVal {
-            Dictionary<string, MalVal> value;
-            public MalHashMap (Dictionary<string, MalVal> val) {
+        public class eHashMap : eValue {
+            Dictionary<string, eValue> value;
+            public eHashMap (Dictionary<string, eValue> val) {
                 value = val;
             }
-            public MalHashMap (MalList lst) {
-                value = new Dictionary<String, MalVal> ();
+            public eHashMap (eList lst) {
+                value = new Dictionary<String, eValue> ();
                 assoc_BANG (lst);
             }
-            public new MalHashMap copy () {
-                var new_self = (MalHashMap) this.MemberwiseClone ();
-                new_self.value = new Dictionary<string, MalVal> (value);
+            public new eHashMap copy () {
+                var new_self = (eHashMap) this.MemberwiseClone ();
+                new_self.value = new Dictionary<string, eValue> (value);
                 return new_self;
             }
 
-            public Dictionary<string, MalVal> getValue () { return value; }
+            public Dictionary<string, eValue> getValue () { return value; }
 
             public override string ToString () {
                 return "{" + printer.join (value, " ", true) + "}";
@@ -295,27 +295,27 @@ namespace Mal {
                 return "{" + printer.join (value, " ", print_readably) + "}";
             }
 
-            public MalHashMap assoc_BANG (MalList lst) {
+            public eHashMap assoc_BANG (eList lst) {
                 for (int i = 0; i < lst.size (); i += 2) {
-                    value[((MalString) lst[i]).getValue ()] = lst[i + 1];
+                    value[((eString) lst[i]).getValue ()] = lst[i + 1];
                 }
                 return this;
             }
 
-            public MalHashMap dissoc_BANG (MalList lst) {
+            public eHashMap dissoc_BANG (eList lst) {
                 for (int i = 0; i < lst.size (); i++) {
-                    value.Remove (((MalString) lst[i]).getValue ());
+                    value.Remove (((eString) lst[i]).getValue ());
                 }
                 return this;
             }
         }
 
-        public class MalAtom : MalVal {
-            MalVal value;
-            public MalAtom (MalVal value) { this.value = value; }
+        public class MalAtom : eValue {
+            eValue value;
+            public MalAtom (eValue value) { this.value = value; }
             //public MalAtom copy() { return new MalAtom(value); }
-            public MalVal getValue () { return value; }
-            public MalVal setValue (MalVal value) { return this.value = value; }
+            public eValue getValue () { return value; }
+            public eValue setValue (eValue value) { return this.value = value; }
             public override string ToString () {
                 return "(atom " + printer._pr_str (value, true) + ")";
             }
@@ -324,17 +324,17 @@ namespace Mal {
             }
         }
 
-        public class MalFunc : MalVal {
-            Func<MalList, MalVal> fn = null;
-            MalVal ast = null;
+        public class eFunction : eValue {
+            Func<eList, eValue> fn = null;
+            eValue ast = null;
             Mal.env.Env env = null;
-            MalList fparams;
+            eList fparams;
             bool macro = false;
-            public MalFunc (Func<MalList, MalVal> fn) {
+            public eFunction (Func<eList, eValue> fn) {
                 this.fn = fn;
             }
-            public MalFunc (MalVal ast, Mal.env.Env env, MalList fparams,
-                Func<MalList, MalVal> fn) {
+            public eFunction (eValue ast, Mal.env.Env env, eList fparams,
+                Func<eList, eValue> fn) {
                 this.fn = fn;
                 this.ast = ast;
                 this.env = env;
@@ -350,14 +350,14 @@ namespace Mal {
                 }
             }
 
-            public MalVal apply (MalList args) {
+            public eValue apply (eList args) {
                 return fn (args);
             }
 
-            public MalVal getAst () { return ast; }
+            public eValue getAst () { return ast; }
             public Mal.env.Env getEnv () { return env; }
-            public MalList getFParams () { return fparams; }
-            public Mal.env.Env genEnv (MalList args) {
+            public eList getFParams () { return fparams; }
+            public Mal.env.Env genEnv (eList args) {
                 return new Mal.env.Env (env, fparams, args);
             }
             public bool isMacro () { return macro; }

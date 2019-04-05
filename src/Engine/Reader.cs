@@ -3,41 +3,44 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Mal;
-using MalVal = Mal.types.MalVal;
-using MalSymbol = Mal.types.MalSymbol;
-using MalList = Mal.types.MalList;
-using MalVector = Mal.types.MalVector;
-using MalHashMap = Mal.types.MalHashMap;
-using MalThrowable = Mal.types.MalThrowable;
-using MalContinue = Mal.types.MalContinue;
+using eValue = Mal.Types.eValue;
+using eSymbol = Mal.Types.eSymbol;
+using eList = Mal.Types.eList;
+using eVector = Mal.Types.eVector;
+using eHashMap = Mal.Types.eHashMap;
+using eThrowable = Mal.Types.eThrowable;
+using eContinue = Mal.Types.eContinue;
 
 namespace Mal {
     public class reader {
-        public class ParseError : MalThrowable {
+
+        public class ParseError : eThrowable {
             public ParseError (string msg) : base (msg) { }
         }
 
         public class Reader {
-            List<string> tokens;
+            List<string> lexemes;
             int position;
+
             public Reader (List<string> t) {
-                tokens = t;
+                lexemes = t;
                 position = 0;
             }
 
             public string peek () {
-                if (position >= tokens.Count) {
+                if (position >= lexemes.Count) {
                     return null;
                 } else {
-                    return tokens[position];
+                    return lexemes[position];
                 }
             }
+
             public string next () {
-                return tokens[position++];
+                return lexemes[position++];
             }
         }
 
-        public static List<string> tokenize (string str) {
+        private static List<string> GetLexemes (string str) {
             List<string> tokens = new List<string> ();
             string pattern = @"[\s ,]*(~@|[\[\]{}()'`~@]|""(?:[\\].|[^\\""])*""|;.*|[^\s \[\]{}()'""`~@,;]*)";
             Regex regex = new Regex (pattern);
@@ -51,7 +54,7 @@ namespace Mal {
             return tokens;
         }
 
-        public static MalVal read_atom (Reader rdr) {
+        public static eValue read_atom (Reader rdr) {
             string token = rdr.next ();
             string pattern = @"(^-?[0-9]+$)|(^-?[0-9][0-9.]*$)|(^nil$)|(^true$)|(^false$)|^("".*"")$|:(.*)|(^[^""]*$)";
             Regex regex = new Regex (pattern);
@@ -61,13 +64,13 @@ namespace Mal {
                 throw new ParseError ("unrecognized token '" + token + "'");
             }
             if (match.Groups[1].Value != String.Empty) {
-                return new Mal.types.MalInt (int.Parse (match.Groups[1].Value));
+                return new Mal.Types.eInt (int.Parse (match.Groups[1].Value));
             } else if (match.Groups[3].Value != String.Empty) {
-                return Mal.types.Nil;
+                return Mal.Types.Nil;
             } else if (match.Groups[4].Value != String.Empty) {
-                return Mal.types.True;
+                return Mal.Types.True;
             } else if (match.Groups[5].Value != String.Empty) {
-                return Mal.types.False;
+                return Mal.Types.False;
             } else if (match.Groups[6].Value != String.Empty) {
                 string str = match.Groups[6].Value;
                 str = str.Substring (1, str.Length - 2)
@@ -75,18 +78,19 @@ namespace Mal {
                     .Replace ("\\\"", "\"")
                     .Replace ("\\n", "\n")
                     .Replace ("\u029e", "\\");
-                return new Mal.types.MalString (str);
+                return new Mal.Types.eString (str);
             } else if (match.Groups[7].Value != String.Empty) {
-                return new Mal.types.MalString ("\u029e" + match.Groups[7].Value);
+                return new Mal.Types.eString ("\u029e" + match.Groups[7].Value);
             } else if (match.Groups[8].Value != String.Empty) {
-                return new Mal.types.MalSymbol (match.Groups[8].Value);
+                return new Mal.Types.eSymbol (match.Groups[8].Value);
             } else {
                 throw new ParseError ("unrecognized '" + match.Groups[0] + "'");
             }
         }
 
-        public static MalVal read_list (Reader rdr, MalList lst, char start, char end) {
+        public static eValue read_list (Reader rdr, eList lst, char start, char end) {
             string token = rdr.next ();
+
             if (token[0] != start) {
                 throw new ParseError ("expected '" + start + "'");
             }
@@ -98,56 +102,57 @@ namespace Mal {
             if (token == null) {
                 throw new ParseError ("expected '" + end + "', got EOF");
             }
+
             rdr.next ();
 
             return lst;
         }
 
-        public static MalVal read_hash_map (Reader rdr) {
-            MalList lst = (MalList) read_list (rdr, new MalList (), '{', '}');
-            return new MalHashMap (lst);
+        public static eValue read_hash_map (Reader rdr) {
+            eList lst = (eList) read_list (rdr, new eList (), '{', '}');
+            return new eHashMap (lst);
         }
 
-        public static MalVal read_form (Reader rdr) {
+        public static eValue read_form (Reader rdr) {
             string token = rdr.peek ();
-            if (token == null) { throw new MalContinue (); }
-            MalVal form = null;
+            if (token == null) { throw new eContinue (); }
+            eValue form = null;
 
             switch (token) {
                 case "'":
                     rdr.next ();
-                    return new MalList (new MalSymbol ("quote"),
+                    return new eList (new eSymbol ("quote"),
                         read_form (rdr));
                 case "`":
                     rdr.next ();
-                    return new MalList (new MalSymbol ("quasiquote"),
+                    return new eList (new eSymbol ("quasiquote"),
                         read_form (rdr));
                 case "~":
                     rdr.next ();
-                    return new MalList (new MalSymbol ("unquote"),
+                    return new eList (new eSymbol ("unquote"),
                         read_form (rdr));
                 case "~@":
                     rdr.next ();
-                    return new MalList (new MalSymbol ("splice-unquote"),
+                    return new eList (new eSymbol ("splice-unquote"),
                         read_form (rdr));
                 case "^":
                     rdr.next ();
-                    MalVal meta = read_form (rdr);
-                    return new MalList (new MalSymbol ("with-meta"),
+                    eValue meta = read_form (rdr);
+                    return new eList (new eSymbol ("with-meta"),
                         read_form (rdr),
                         meta);
                 case "@":
                     rdr.next ();
-                    return new MalList (new MalSymbol ("deref"),
+                    return new eList (new eSymbol ("deref"),
                         read_form (rdr));
 
                 case "(":
-                    form = read_list (rdr, new MalList (), '(', ')');
+                    form = read_list (rdr, new eList (), '(', ')');
                     break;
                 case ")":
                     throw new ParseError ("unexpected ')'");
                 case "[":
-                    form = read_list (rdr, new MalVector (), '[', ']');
+                    form = read_list (rdr, new eVector (), '[', ']');
                     break;
                 case "]":
                     throw new ParseError ("unexpected ']'");
@@ -163,8 +168,8 @@ namespace Mal {
             return form;
         }
 
-        public static MalVal read_str (string str) {
-            return read_form (new Reader (tokenize (str)));
+        public static eValue read_str (string str) {
+            return read_form (new Reader (GetLexemes (str)));
         }
     }
 }
