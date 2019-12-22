@@ -1,14 +1,12 @@
 
-(def! *host-language* "c#")
+(def *host-language* "c#")
 
-(def! not
-  (fn* [a] (if a false true)))
+(def not (fn [a] (if a false true)))
 
-(def! load-file
-  (fn* (f) (eval (read-string (str "(do " (slurp f) ")")))))
+(def load-file (fn [f] (eval (read-string (str "(do " (slurp f) ")")))))
 
 (defmacro! cond
-  (fn* (& xs)
+  (fn (& xs)
     (if (> (count xs) 0)
       (list
         'if (first xs)
@@ -17,21 +15,21 @@
             (throw "odd number of forms to cond"))
           (cons 'cond (rest (rest xs)))))))
 
-(def! *gensym-counter*
+(def *gensym-counter*
   (atom 0))
 
-(def! gensym
-  (fn* []
-    (symbol (str "G__" (swap! *gensym-counter* (fn* [x] (+ 1 x)))))))
+(def gensym
+  (fn []
+    (symbol (str "G__" (swap! *gensym-counter* (fn [x] (+ 1 x)))))))
 
-(defmacro! or
-  (fn* [& xs]
+(defmacro or
+  (fn [& xs]
     (if (empty? xs)
       nil
       (if (= 1 (count xs))
         (first xs)
-        (let* (condvar (gensym))
-          `(let* (~condvar ~(first xs))
+        (let (condvar (gensym))
+          `(let (~condvar ~(first xs))
             (if ~condvar
               ~condvar
               (or ~@(rest xs)))))))))

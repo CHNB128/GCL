@@ -1,6 +1,6 @@
 build = ./build
 sources = ./src/Repl.cs ./src/Engine/*.cs
-exe_name = glc
+exe_name = evil
 libs = ./libs/NDesk/*.cs
 
 all:

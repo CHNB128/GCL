@@ -1,42 +1,42 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using eValue = Mal.Types.eValue;
-using MalConstant = Mal.Types.MalConstant;
-using eInt = Mal.Types.eInt;
-using eSymbol = Mal.Types.eSymbol;
-using eString = Mal.Types.eString;
-using eList = Mal.Types.eList;
-using eVector = Mal.Types.eVector;
-using eHashMap = Mal.Types.eHashMap;
-using MalAtom = Mal.Types.MalAtom;
-using eFunction = Mal.Types.eFunction;
+using eValue = Evil.Types.eValue;
+using eConstant = Evil.Types.eConstant;
+using eInt = Evil.Types.eInt;
+using eSymbol = Evil.Types.eSymbol;
+using eString = Evil.Types.eString;
+using eList = Evil.Types.eList;
+using eVector = Evil.Types.eVector;
+using eHashMap = Evil.Types.eHashMap;
+using eAtom = Evil.Types.eAtom;
+using eFunction = Evil.Types.eFunction;
 
-namespace Mal
+namespace Evil
 {
     public class core
     {
-        static MalConstant Nil = Mal.Types.Nil;
-        static MalConstant True = Mal.Types.True;
-        static MalConstant False = Mal.Types.False;
-
+        // Atoms
+        static eConstant Nil = Evil.Types.Nil;
+        static eConstant True = Evil.Types.True;
+        static eConstant False = Evil.Types.False;
         // Errors/Exceptions
-        static public eFunction mal_throw = new eFunction(
-            a => { throw new Mal.Types.eException(a[0]); });
-
+        static public eFunction EvilThrow = new eFunction(
+            a => { throw new Evil.Types.eException(a[0]); }
+        );
         // Scalar functions
         static eFunction nil_Q = new eFunction(
-            a => a[0] == Nil ? True : False);
-
+            a => a[0] == Nil ? True : False
+        );
         static eFunction true_Q = new eFunction(
-            a => a[0] == True ? True : False);
-
+            a => a[0] == True ? True : False
+        );
         static eFunction false_Q = new eFunction(
-            a => a[0] == False ? True : False);
-
+            a => a[0] == False ? True : False
+        );
         static eFunction symbol_Q = new eFunction(
-            a => a[0] is eSymbol ? True : False);
-
+            a => a[0] is eSymbol ? True : False
+        );
         static eFunction string_Q = new eFunction(
             a =>
             {
@@ -49,8 +49,8 @@ namespace Mal
                 {
                     return False;
                 }
-            });
-
+            }
+        );
         static eFunction keyword = new eFunction(
             a =>
             {
@@ -63,8 +63,8 @@ namespace Mal
                 {
                     return new eString("\u029e" + ((eString) a[0]).getValue());
                 }
-            });
-
+            }
+        );
         static eFunction keyword_Q = new eFunction(
             a =>
             {
@@ -77,67 +77,79 @@ namespace Mal
                 {
                     return False;
                 }
-            });
-
+            }
+        );
         static eFunction number_Q = new eFunction(
-            a => a[0] is eInt ? True : False);
-
+            a => a[0] is eInt ? True : False
+        );
         static eFunction function_Q = new eFunction(
-            a => a[0] is eFunction && !((eFunction) a[0]).isMacro() ? True : False);
-
+            a => a[0] is eFunction && !((eFunction) a[0]).isMacro() ? True : False
+        );
         static eFunction macro_Q = new eFunction(
-            a => a[0] is eFunction && ((eFunction) a[0]).isMacro() ? True : False);
+            a => a[0] is eFunction && ((eFunction) a[0]).isMacro() ? True : False
+        );
 
         // Number functions
         static eFunction time_ms = new eFunction(
-            a => new eInt(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond));
+            a => new eInt(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond)
+        );
 
         // String functions
         static public eFunction pr_str = new eFunction(
-            a => new eString(printer._pr_str_args(a, " ", true)));
+            a => new eString(printer._pr_str_args(a, " ", true))
+        );
 
         static public eFunction str = new eFunction(
-            a => new eString(printer._pr_str_args(a, "", false)));
+            a => new eString(printer._pr_str_args(a, "", false))
+        );
 
         static public eFunction prn = new eFunction(
             a =>
             {
                 Console.WriteLine(printer._pr_str_args(a, " ", true));
                 return Nil;
-            });
+            }
+        );
 
         static public eFunction println = new eFunction(
             a =>
             {
                 Console.WriteLine(printer._pr_str_args(a, " ", false));
                 return Nil;
-            });
+            }
+        );
 
-        static public eFunction mal_readline = new eFunction(
+        static public eFunction Evil_readline = new eFunction(
             a =>
             {
-                var line = readline.Readline(((eString) a[0]).getValue());
+                var line = ReadLine.Read(((eString) a[0]).getValue());
                 if (line == null) { return Types.Nil; }
                 else { return new eString(line); }
-            });
+            }
+        );
 
         static public eFunction read_string = new eFunction(
-            a => reader.read_str(((eString) a[0]).getValue()));
+            a => Lexer.Tokenize(((eString) a[0]).getValue())
+        );
 
         static public eFunction slurp = new eFunction(
             a => new eString(File.ReadAllText(
-                ((eString) a[0]).getValue())));
+                ((eString) a[0]).getValue()))
+        );
 
         // List/Vector functions
         static public eFunction list_Q = new eFunction(
-            a => a[0].GetType() == typeof(eList) ? True : False);
+            a => a[0].GetType() == typeof(eList) ? True : False
+        );
 
         static public eFunction vector_Q = new eFunction(
-            a => a[0].GetType() == typeof(eVector) ? True : False);
+            a => a[0].GetType() == typeof(eVector) ? True : False
+        );
 
         // HashMap functions
         static public eFunction hash_map_Q = new eFunction(
-            a => a[0].GetType() == typeof(eHashMap) ? True : False);
+            a => a[0].GetType() == typeof(eHashMap) ? True : False
+        );
 
         static eFunction contains_Q = new eFunction(
             a =>
@@ -145,21 +157,24 @@ namespace Mal
                 string key = ((eString) a[1]).getValue();
                 var dict = ((eHashMap) a[0]).getValue();
                 return dict.ContainsKey(key) ? True : False;
-            });
+            }
+        );
 
         static eFunction assoc = new eFunction(
             a =>
             {
                 var new_hm = ((eHashMap) a[0]).copy();
                 return new_hm.assoc_BANG((eList) a.slice(1));
-            });
+            }
+        );
 
         static eFunction dissoc = new eFunction(
             a =>
             {
                 var new_hm = ((eHashMap) a[0]).copy();
                 return new_hm.dissoc_BANG((eList) a.slice(1));
-            });
+            }
+        );
 
         static eFunction get = new eFunction(
             a =>
@@ -174,7 +189,8 @@ namespace Mal
                     var dict = ((eHashMap) a[0]).getValue();
                     return dict.ContainsKey(key) ? dict[key] : Nil;
                 }
-            });
+            }
+        );
 
         static eFunction keys = new eFunction(
             a =>
@@ -186,7 +202,8 @@ namespace Mal
                     key_lst.conj_BANG(new eString(key));
                 }
                 return key_lst;
-            });
+            }
+        );
 
         static eFunction vals = new eFunction(
             a =>
@@ -198,11 +215,13 @@ namespace Mal
                     val_lst.conj_BANG(val);
                 }
                 return val_lst;
-            });
+            }
+        );
 
         // Sequence functions
         static public eFunction sequential_Q = new eFunction(
-            a => a[0] is eList ? True : False);
+            a => a[0] is eList ? True : False
+        );
 
         static eFunction cons = new eFunction(
             a =>
@@ -211,7 +230,8 @@ namespace Mal
                 lst.Add(a[0]);
                 lst.AddRange(((eList) a[1]).getValue());
                 return (eValue) new eList(lst);
-            });
+            }
+        );
 
         static eFunction concat = new eFunction(
             a =>
@@ -224,7 +244,8 @@ namespace Mal
                     lst.AddRange(((eList) a[i]).getValue());
                 }
                 return (eValue) new eList(lst);
-            });
+            }
+        );
 
         static eFunction nth = new eFunction(
             a =>
@@ -236,19 +257,23 @@ namespace Mal
                 }
                 else
                 {
-                    throw new Mal.Types.eException(
+                    throw new Evil.Types.eException(
                         "nth: index out of range");
                 }
-            });
+            }
+        );
 
         static eFunction first = new eFunction(
-            a => a[0] == Nil ? Nil : ((eList) a[0]) [0]);
+            a => a[0] == Nil ? Nil : ((eList) a[0]) [0]
+        );
 
         static eFunction rest = new eFunction(
-            a => a[0] == Nil ? new eList() : ((eList) a[0]).rest());
+            a => a[0] == Nil ? new eList() : ((eList) a[0]).rest()
+        );
 
         static eFunction empty_Q = new eFunction(
-            a => ((eList) a[0]).size() == 0 ? True : False);
+            a => ((eList) a[0]).size() == 0 ? True : False
+        );
 
         static eFunction count = new eFunction(
             a =>
@@ -256,7 +281,8 @@ namespace Mal
                 return (a[0] == Nil) ?
                     new eInt(0) :
                     new eInt(((eList) a[0]).size());
-            });
+            }
+        );
 
         static eFunction conj = new eFunction(
             a =>
@@ -280,7 +306,8 @@ namespace Mal
                     }
                     return new eList(new_lst);
                 }
-            });
+            }
+        );
 
         static eFunction seq = new eFunction(
             a =>
@@ -316,7 +343,8 @@ namespace Mal
                     return new eList(chars_list);
                 }
                 return Nil;
-            });
+            }
+        );
 
         // General list related functions
         static eFunction apply = new eFunction(
@@ -327,7 +355,8 @@ namespace Mal
                 lst.AddRange(a.slice(1, a.size() - 1).getValue());
                 lst.AddRange(((eList) a[a.size() - 1]).getValue());
                 return f.apply(new eList(lst));
-            });
+            }
+        );
 
         static eFunction map = new eFunction(
             a =>
@@ -340,29 +369,35 @@ namespace Mal
                     new_lst.Add(f.apply(new eList(src_lst[i])));
                 }
                 return new eList(new_lst);
-            });
+            }
+        );
 
         // Metadata functions
         static eFunction meta = new eFunction(
-            a => a[0].getMeta());
+            a => a[0].getMeta()
+        );
 
         static eFunction with_meta = new eFunction(
-            a => ((eValue) a[0]).copy().setMeta(a[1]));
+            a => ((eValue) a[0]).copy().setMeta(a[1])
+        );
 
         // Atom functions
         static eFunction atom_Q = new eFunction(
-            a => a[0] is MalAtom ? True : False);
+            a => a[0] is eAtom ? True : False
+        );
 
         static eFunction deref = new eFunction(
-            a => ((MalAtom) a[0]).getValue());
+            a => ((eAtom) a[0]).getValue()
+        );
 
         static eFunction reset_BANG = new eFunction(
-            a => ((MalAtom) a[0]).setValue(a[1]));
+            a => ((eAtom) a[0]).setValue(a[1])
+        );
 
         static eFunction swap_BANG = new eFunction(
             a =>
             {
-                MalAtom atm = (MalAtom) a[0];
+                eAtom atm = (eAtom) a[0];
                 eFunction f = (eFunction) a[1];
                 var new_lst = new List<eValue>();
                 new_lst.Add(atm.getValue());
@@ -376,9 +411,9 @@ namespace Mal
                 {
                 "=",
                 new eFunction(
-                a => Mal.Types._equal_Q(a[0], a[1]) ? True : False)
+                a => Evil.Types._equal_Q(a[0], a[1]) ? True : False)
                 },
-                { "throw", mal_throw },
+                { "throw", EvilThrow },
                 { "nil?", nil_Q },
                 { "true?", true_Q },
                 { "false?", false_Q },
@@ -395,7 +430,7 @@ namespace Mal
                 { "str", str },
                 { "prn", prn },
                 { "println", println },
-                { "readline", mal_readline },
+                { "readline", Evil_readline },
                 { "read-string", read_string },
                 { "slurp", slurp },
                 { "<", new eFunction(a => (eInt) a[0] < (eInt) a[1]) },
@@ -436,7 +471,7 @@ namespace Mal
 
                 { "with-meta", with_meta },
                 { "meta", meta },
-                { "atom", new eFunction(a => new MalAtom(a[0])) },
+                { "atom", new eFunction(a => new eAtom(a[0])) },
                 { "atom?", atom_Q },
                 { "deref", deref },
                 { "reset!", reset_BANG },

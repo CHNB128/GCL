@@ -2,16 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-using Mal;
-using eValue = Mal.Types.eValue;
-using eList = Mal.Types.eList;
+using Evil;
+using eValue = Evil.Types.eValue;
+using eList = Evil.Types.eList;
 
-namespace Mal
+namespace Evil
 {
     public class printer
     {
-        public static string join(List<eValue> value,
-            string delim, bool print_readably)
+        public static string join(List<eValue> value, string delim, bool print_readably)
         {
             List<string> strs = new List<string>();
             foreach (eValue mv in value)
@@ -21,10 +20,10 @@ namespace Mal
             return String.Join(delim, strs.ToArray());
         }
 
-        public static string join(Dictionary<string, eValue> value,
-            string delim, bool print_readably)
+        public static string join(Dictionary<string, eValue> value, string delim, bool print_readably)
         {
             List<string> strs = new List<string>();
+
             foreach (KeyValuePair<string, eValue> entry in value)
             {
                 if (entry.Key.Length > 0 && entry.Key[0] == '\u029e')
@@ -49,8 +48,7 @@ namespace Mal
             return mv.ToString(print_readably);
         }
 
-        public static string _pr_str_args(eList args, String sep,
-            bool print_readably)
+        public static string _pr_str_args(eList args, String sep, bool print_readably)
         {
             return join(args.getValue(), sep, print_readably);
         }

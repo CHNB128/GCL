@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-using Mal;
+using Evil;
 
-namespace Mal
+namespace Evil
 {
     public class Types
     {
@@ -41,77 +41,10 @@ namespace Mal
             public eValue getValue() { return value; }
         }
 
-        //
-        // General functions
-        //
-        public static bool _equal_Q(eValue a, eValue b)
-        {
-            Type ota = a.GetType(), otb = b.GetType();
-            if (!((ota == otb) ||
-                    (a is eList && b is eList)))
-            {
-                return false;
-            }
-            else
-            {
-                if (a is eInt)
-                {
-                    return ((eInt) a).getValue() ==
-                        ((eInt) b).getValue();
-                }
-                else if (a is eSymbol)
-                {
-                    return ((eSymbol) a).getName() ==
-                        ((eSymbol) b).getName();
-                }
-                else if (a is eString)
-                {
-                    return ((eString) a).getValue() ==
-                        ((eString) b).getValue();
-                }
-                else if (a is eList)
-                {
-                    if (((eList) a).size() != ((eList) b).size())
-                    {
-                        return false;
-                    }
-                    for (int i = 0; i < ((eList) a).size(); i++)
-                    {
-                        if (!_equal_Q(((eList) a) [i], ((eList) b) [i]))
-                        {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                else if (a is eHashMap)
-                {
-                    var akeys = ((eHashMap) a).getValue().Keys;
-                    var bkeys = ((eHashMap) b).getValue().Keys;
-                    if (akeys.Count != bkeys.Count)
-                    {
-                        return false;
-                    }
-                    foreach (var k in akeys)
-                    {
-                        if (!_equal_Q(((eHashMap) a).getValue() [k],
-                                ((eHashMap) b).getValue() [k]))
-                        {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                else
-                {
-                    return a == b;
-                }
-            }
-        }
-
         public abstract class eValue
         {
             eValue meta = Nil;
+
             public virtual eValue copy()
             {
                 return (eValue) this.MemberwiseClone();
@@ -127,11 +60,11 @@ namespace Mal
             public virtual bool list_Q() { return false; }
         }
 
-        public class MalConstant : eValue
+        public class eConstant : eValue
         {
             string value;
-            public MalConstant(string name) { value = name; }
-            public new MalConstant copy() { return this; }
+            public eConstant(string name) { value = name; }
+            public new eConstant copy() { return this; }
 
             public override string ToString()
             {
@@ -143,9 +76,9 @@ namespace Mal
             }
         }
 
-        static public MalConstant Nil = new MalConstant("nil");
-        static public MalConstant True = new MalConstant("true");
-        static public MalConstant False = new MalConstant("false");
+        static public eConstant Nil = new eConstant("nil");
+        static public eConstant True = new eConstant("true");
+        static public eConstant False = new eConstant("false");
 
         public class eInt : eValue
         {
@@ -162,19 +95,19 @@ namespace Mal
             {
                 return value.ToString();
             }
-            public static MalConstant operator <(eInt a, eInt b)
+            public static eConstant operator <(eInt a, eInt b)
             {
                 return a.getValue() < b.getValue() ? True : False;
             }
-            public static MalConstant operator <=(eInt a, eInt b)
+            public static eConstant operator <=(eInt a, eInt b)
             {
                 return a.getValue() <= b.getValue() ? True : False;
             }
-            public static MalConstant operator >(eInt a, eInt b)
+            public static eConstant operator >(eInt a, eInt b)
             {
                 return a.getValue() > b.getValue() ? True : False;
             }
-            public static MalConstant operator >=(eInt a, eInt b)
+            public static eConstant operator >=(eInt a, eInt b)
             {
                 return a.getValue() >= b.getValue() ? True : False;
             }
@@ -397,11 +330,11 @@ namespace Mal
             }
         }
 
-        public class MalAtom : eValue
+        public class eAtom : eValue
         {
             eValue value;
-            public MalAtom(eValue value) { this.value = value; }
-            //public MalAtom copy() { return new MalAtom(value); }
+            public eAtom(eValue value) { this.value = value; }
+            //public eAtom copy() { return new eAtom(value); }
             public eValue getValue() { return value; }
             public eValue setValue(eValue value) { return this.value = value; }
             public override string ToString()
@@ -418,14 +351,14 @@ namespace Mal
         {
             Func<eList, eValue> fn = null;
             eValue ast = null;
-            Mal.env.Env env = null;
+            Evil.Env env = null;
             eList fparams;
             bool macro = false;
             public eFunction(Func<eList, eValue> fn)
             {
                 this.fn = fn;
             }
-            public eFunction(eValue ast, Mal.env.Env env, eList fparams,
+            public eFunction(eValue ast, Evil.Env env, eList fparams,
                 Func<eList, eValue> fn)
             {
                 this.fn = fn;
@@ -438,8 +371,8 @@ namespace Mal
             {
                 if (ast != null)
                 {
-                    return "<fn* " + Mal.printer._pr_str(fparams, true) +
-                        " " + Mal.printer._pr_str(ast, true) + ">";
+                    return "<fn* " + Evil.printer._pr_str(fparams, true) +
+                        " " + Evil.printer._pr_str(ast, true) + ">";
                 }
                 else
                 {
@@ -453,15 +386,79 @@ namespace Mal
             }
 
             public eValue getAst() { return ast; }
-            public Mal.env.Env getEnv() { return env; }
+            public Evil.Env getEnv() { return env; }
             public eList getFParams() { return fparams; }
-            public Mal.env.Env genEnv(eList args)
+            public Evil.Env genEnv(eList args)
             {
-                return new Mal.env.Env(env, fparams, args);
+                return new Evil.Env(env, fparams, args);
             }
             public bool isMacro() { return macro; }
             public void setMacro() { macro = true; }
 
+        }
+        //
+        // General functions
+        //
+        public static bool _equal_Q(eValue a, eValue b)
+        {
+            Type ota = a.GetType(), otb = b.GetType();
+
+            if (!((ota == otb) || (a is eList && b is eList)))
+            {
+                return false;
+            }
+            else
+            {
+                if (a is eInt)
+                {
+                    return ((eInt) a).getValue() == ((eInt) b).getValue();
+                }
+                else if (a is eSymbol)
+                {
+                    return ((eSymbol) a).getName() == ((eSymbol) b).getName();
+                }
+                else if (a is eString)
+                {
+                    return ((eString) a).getValue() == ((eString) b).getValue();
+                }
+                else if (a is eList)
+                {
+                    if (((eList) a).size() != ((eList) b).size())
+                    {
+                        return false;
+                    }
+                    for (int i = 0; i < ((eList) a).size(); i++)
+                    {
+                        if (!_equal_Q(((eList) a) [i], ((eList) b) [i]))
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                else if (a is eHashMap)
+                {
+                    var akeys = ((eHashMap) a).getValue().Keys;
+                    var bkeys = ((eHashMap) b).getValue().Keys;
+                    if (akeys.Count != bkeys.Count)
+                    {
+                        return false;
+                    }
+                    foreach (var k in akeys)
+                    {
+                        if (!_equal_Q(((eHashMap) a).getValue() [k],
+                                ((eHashMap) b).getValue() [k]))
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                else
+                {
+                    return a == b;
+                }
+            }
         }
     }
 }

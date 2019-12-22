@@ -3,22 +3,47 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
-using Mal;
-using eValue = Mal.Types.eValue;
-using eString = Mal.Types.eString;
-using eSymbol = Mal.Types.eSymbol;
-using eInt = Mal.Types.eInt;
-using eList = Mal.Types.eList;
-using eVector = Mal.Types.eVector;
-using eHashMap = Mal.Types.eHashMap;
-using eFunction = Mal.Types.eFunction;
-using Env = Mal.env.Env;
+using Evil;
 
-namespace Mal
+using Internal;
+using eValue = Evil.Types.eValue;
+using eString = Evil.Types.eString;
+using eSymbol = Evil.Types.eSymbol;
+using eInt = Evil.Types.eInt;
+using eList = Evil.Types.eList;
+using eVector = Evil.Types.eVector;
+using eHashMap = Evil.Types.eHashMap;
+using eFunction = Evil.Types.eFunction;
+using Env = Evil.Env;
+
+namespace Evil
 {
 
   public sealed class Repl
   {
+
+    private Evil.Env enviroment;
+
+    public Repl()
+    {
+      this.enviroment = new Evil.Env(null);
+
+      // core.cs: defined using C#
+      foreach (var entry in core.ns)
+      {
+        this.enviroment.set(new eSymbol(entry.Key), entry.Value);
+      }
+
+      this.enviroment.set(
+        new eSymbol("eval"),
+        new eFunction(a => Eval(a[0], this.enviroment))
+      );
+    }
+
+    public void EvalString(string expresion)
+    {
+      Eval(Read(expresion), this.enviroment);
+    }
 
     // eval
     public static bool is_pair(eValue x)
@@ -87,7 +112,7 @@ namespace Mal
       return ast;
     }
 
-    static eValue eval_ast(eValue ast, Env env)
+    static eValue ParseAST(eValue ast, Env env)
     {
       if (ast is eSymbol)
       {
@@ -95,23 +120,26 @@ namespace Mal
       }
       else if (ast is eList)
       {
-        eList old_lst = (eList) ast;
-        eList new_lst = ast.list_Q() ? new eList() :
-          (eList) new eVector();
-        foreach (eValue mv in old_lst.getValue())
+        eList oldList = (eList) ast;
+        eList newList = ast.list_Q() ? new eList() : (eList) new eVector();
+
+        foreach (eValue mv in oldList.getValue())
         {
-          new_lst.conj_BANG(Eval(mv, env));
+          newList.conj_BANG(Eval(mv, env));
         }
-        return new_lst;
+
+        return newList;
       }
       else if (ast is eHashMap)
       {
-        var new_dict = new Dictionary<string, eValue>();
+        var hashMap = new Dictionary<string, eValue>();
+
         foreach (var entry in ((eHashMap) ast).getValue())
         {
-          new_dict.Add(entry.Key, Eval((eValue) entry.Value, env));
+          hashMap.Add(entry.Key, Eval((eValue) entry.Value, env));
         }
-        return new eHashMap(new_dict);
+
+        return new eHashMap(hashMap);
       }
       else
       {
@@ -126,35 +154,25 @@ namespace Mal
 
       while (true)
       {
+        if (!orig_ast.list_Q()) return ParseAST(orig_ast, env);
 
-        //Console.WriteLine("Eval: " + printer._pr_str(orig_ast, true));
-        if (!orig_ast.list_Q())
-        {
-          return eval_ast(orig_ast, env);
-        }
-
-        // apply list
         eValue expanded = macroexpand(orig_ast, env);
-        if (!expanded.list_Q())
-        {
-          return eval_ast(expanded, env);
-        }
-        eList ast = (eList) expanded;
+        if (!expanded.list_Q()) return ParseAST(expanded, env);
 
-        if (ast.size() == 0) { return ast; }
+        eList ast = (eList) expanded;
+        if (ast.size() == 0) return ast;
+
         a0 = ast[0];
 
         String a0sym = a0 is eSymbol ? ((eSymbol) a0).getName() : "__<*fn*>__";
 
         switch (a0sym)
         {
-          case "def!":
-            a1 = ast[1];
-            a2 = ast[2];
-            res = Eval(a2, env);
-            env.set((eSymbol) a1, res);
+          case "def": // define vareable
+            res = Eval(ast[2] /* vareable value */ , env);
+            env.set((eSymbol) ast[1] /* vareable name */ , res);
             return res;
-          case "let*":
+          case "let":
             a1 = ast[1];
             a2 = ast[2];
             eSymbol key;
@@ -174,16 +192,13 @@ namespace Mal
           case "quasiquote":
             orig_ast = quasiquote(ast[1]);
             break;
-          case "defmacro!":
-            a1 = ast[1];
-            a2 = ast[2];
-            res = Eval(a2, env);
+          case "defmacro": // define macros
+            res = Eval(ast[2] /* macros value */ , env);
             ((eFunction) res).setMacro();
-            env.set(((eSymbol) a1), res);
+            env.set(((eSymbol) ast[1] /* macros name */ ), res);
             return res;
-          case "macroexpand":
-            a1 = ast[1];
-            return macroexpand(a1, env);
+          case "macroexpand": // return macros body
+            return macroexpand(ast[1] /* macros name */ , env);
           case "try*":
             try
             {
@@ -198,9 +213,9 @@ namespace Mal
                 eValue a20 = ((eList) a2) [0];
                 if (((eSymbol) a20).getName() == "catch*")
                 {
-                  if (e is Mal.Types.eException)
+                  if (e is Evil.Types.eException)
                   {
-                    exc = ((Mal.Types.eException) e).getValue();
+                    exc = ((Evil.Types.eException) e).getValue();
                   }
                   else
                   {
@@ -213,14 +228,14 @@ namespace Mal
               }
               throw e;
             }
-          case "do":
-            eval_ast(ast.slice(1, ast.size() - 1), env);
+          case "do": // simple block construction
+            ParseAST(ast.slice(1, ast.size() - 1), env);
             orig_ast = ast[ast.size() - 1];
             break;
           case "if":
             a1 = ast[1];
             eValue cond = Eval(a1, env);
-            if (cond == Mal.Types.Nil || cond == Mal.Types.False)
+            if (cond == Evil.Types.Nil || cond == Evil.Types.False)
             {
               // eval false slot form
               if (ast.size() > 3)
@@ -229,7 +244,7 @@ namespace Mal
               }
               else
               {
-                return Mal.Types.Nil;
+                return Evil.Types.Nil;
               }
             }
             else
@@ -238,14 +253,14 @@ namespace Mal
               orig_ast = ast[2];
             }
             break;
-          case "fn*":
+          case "fn":
             eList a1f = (eList) ast[1];
             eValue a2f = ast[2];
             Env cur_env = env;
             return new eFunction(a2f, env, a1f,
               args => Eval(a2f, new Env(cur_env, a1f, args)));
           default:
-            el = (eList) eval_ast(ast, env);
+            el = (eList) ParseAST(ast, env);
             var f = (eFunction) el[0];
             eValue fnast = f.getAst();
             if (fnast != null)
@@ -263,52 +278,33 @@ namespace Mal
       }
     }
 
-    static eValue Read(string str)
+    private eValue Read(string expresion)
     {
-      return reader.read_str(str);
+      return Lexer.Tokenize(expresion);
     }
 
-    static string Print(eValue expresions)
+    private string Print(eValue expresion)
     {
-      return printer._pr_str(expresions, true);
+      return printer._pr_str(expresion, true);
     }
 
-    public static void Loop(string[] args)
+    public void EvalFile(string filepath)
     {
-      var repl_env = new Mal.env.Env(null);
+      this.EvalString("(def load-file (fn [f] (eval (read-string (str \"(do \" (slurp f) \")\")))))");
+      this.EvalString($"(load-file \"{filepath}\")");
+    }
 
-      Func<string, eValue> RE = (string str) => Eval(Read(str), repl_env);
-
-      // core.cs: defined using C#
-      foreach (var entry in core.ns)
-      {
-        repl_env.set(new eSymbol(entry.Key), entry.Value);
-      }
-
-      repl_env.set(new eSymbol("eval"), new eFunction(a => Eval(a[0], repl_env)));
-
-      int fileIdx = 0;
-
-      // if (args.Length > 0 && args[0] == "--raw") {
-      //   Mal.readline.mode = Mal.readline.Mode.Raw;
-      //   fileIdx = 1;
-      // }
+    public void Loop(string[] args)
+    {
 
       eList _argv = new eList();
 
-      for (int i = fileIdx + 1; i < args.Length; i++)
+      for (int i = 1; i < args.Length; i++)
       {
         _argv.conj_BANG(new eString(args[i]));
       }
 
-      repl_env.set(new eSymbol("*ARGV*"), _argv);
-
-      // if (args.Length > fileIdx) {
-      //   RE ("(load-file \"" + args[fileIdx] + "\")");
-      //   return;
-      // }
-
-      // RE ("(println (str \"Mal [\" *host-language* \"]\"))");
+      this.enviroment.set(new eSymbol("*ARGV*"), _argv);
 
       while (true)
       {
@@ -316,7 +312,7 @@ namespace Mal
 
         try
         {
-          line = Mal.readline.Readline("user> ");
+          line = ReadLine.Read("user> ");
           if (line == null) { break; }
           if (line == "") { continue; }
         }
@@ -328,13 +324,13 @@ namespace Mal
 
         try
         {
-          Console.WriteLine(Print(RE(line)));
+          Console.WriteLine(this.Print(this.EvalString(line)));
         }
-        catch (Mal.Types.eContinue)
+        catch (Evil.Types.eContinue)
         {
           continue;
         }
-        catch (Mal.Types.eException e)
+        catch (Evil.Types.eException e)
         {
           Console.WriteLine($"Error: {printer._pr_str (e.getValue (), false)}");
           continue;

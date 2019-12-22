@@ -3,21 +3,21 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
-using Internal;
+using Evil;
 
-using Mal;
-using eValue = Mal.Types.eValue;
-using eString = Mal.Types.eString;
-using eSymbol = Mal.Types.eSymbol;
-using eInt = Mal.Types.eInt;
-using eList = Mal.Types.eList;
-using eVector = Mal.Types.eVector;
-using eHashMap = Mal.Types.eHashMap;
-using eFunction = Mal.Types.eFunction;
-using Env = Mal.env.Env;
+using Internal;
+using eValue = Evil.Types.eValue;
+using eString = Evil.Types.eString;
+using eSymbol = Evil.Types.eSymbol;
+using eInt = Evil.Types.eInt;
+using eList = Evil.Types.eList;
+using eVector = Evil.Types.eVector;
+using eHashMap = Evil.Types.eHashMap;
+using eFunction = Evil.Types.eFunction;
+using Env = Evil.Env;
 using NDesk.Options;
 
-namespace Mal
+namespace Evil
 {
 
   public sealed class Program
@@ -46,6 +46,7 @@ namespace Mal
 
     public static void Main(string[] args)
     {
+      var repl = new Evil.Repl();
       bool showHelpMessage = false;
       List<string> names = new List<string>();
       int repeat = 1;
@@ -55,7 +56,12 @@ namespace Mal
         {
         "repl",
         "start repl",
-        v => Mal.Repl.Loop(args)
+        v => repl.Loop(args)
+        },
+        {
+        "c|compile",
+        "compile file",
+        v => repl.EvalFile(args[1])
         },
         {
         "v",
@@ -65,7 +71,7 @@ namespace Mal
         {
         "h|help",
         "show this message and exit",
-        v => showHelpMessage = v != null
+        v => showHelpMessage = true
         },
       };
 

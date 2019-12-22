@@ -2,26 +2,23 @@ using System;
 
 using Mono.Terminal; // LineEditor (getline.cs)
 
-namespace Mal
+namespace Evil
 {
-    public class readline
+    public enum ReadLineMode { Terminal, Raw }
+
+    public class ReadLine
     {
-        public enum Mode
+        public static ReadLineMode mode = ReadLineMode.Terminal;
+
+        static LineEditor lineedit = null;
+
+        public static string Read(string prompt)
         {
-            Terminal,
-            Raw
-            };
-            public static Mode mode = Mode.Terminal;
-
-            static LineEditor lineedit = null;
-
-            public static string Readline(string prompt)
+            if (mode == ReadLineMode.Terminal)
             {
-            if (mode == Mode.Terminal)
-            {
-            if (lineedit == null)
-            {
-            lineedit = new LineEditor("Mal");
+                if (lineedit == null)
+                {
+                    lineedit = new LineEditor("Mal");
                 }
                 return lineedit.Edit(prompt, "");
             }

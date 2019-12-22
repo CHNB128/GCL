@@ -2,20 +2,23 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using Mal;
-using eValue = Mal.Types.eValue;
-using eString = Mal.Types.eString;
-using eSymbol = Mal.Types.eSymbol;
-using eInt = Mal.Types.eInt;
-using eList = Mal.Types.eList;
-using eVector = Mal.Types.eVector;
-using eHashMap = Mal.Types.eHashMap;
-using eFunction = Mal.Types.eFunction;
-using Env = Mal.env.Env;
 
-namespace Mal {
+using Evil;
+using eValue = Evil.Types.eValue;
+using eString = Evil.Types.eString;
+using eSymbol = Evil.Types.eSymbol;
+using eInt = Evil.Types.eInt;
+using eList = Evil.Types.eList;
+using eVector = Evil.Types.eVector;
+using eHashMap = Evil.Types.eHashMap;
+using eFunction = Evil.Types.eFunction;
+using Env = Evil.env.Env;
 
-  public sealed class Compiler {
+namespace Evil
+{
+
+  public sealed class Compiler
+  {
 
   }
 
